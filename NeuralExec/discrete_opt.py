@@ -93,6 +93,7 @@ class WhiteBoxTokensOpt:
         grad = adv_ohe.grad.detach()
         grad = grad.sum(0)
         grad = grad / grad.norm()
+        self.llm.zero_grad()
         
         return grad, loss, losses
     

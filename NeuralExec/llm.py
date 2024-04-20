@@ -1,7 +1,7 @@
 import os
 import torch
 import transformers
-from transformers import AutoModelForCausalLM, AutoTokenizer, LlamaTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, LlamaTokenizer, BitsAndBytesConfig
 
 _cache_dir = '/raid/user_storage/pasquini/GPT/Pre-trained/'
 
@@ -15,11 +15,13 @@ class LLM:
         on_device=True,
         model_load_kargs={},
         tokenizer_only=False,
+        half_precision=True,
     ):
         self.llm_name = llm_name
         self.model_class = model_class
         
-        self.tokenizer = tokenizer_class.from_pretrained(llm_name, padding_side='left', legacy=False)
+        # self.tokenizer = tokenizer_class.from_pretrained(llm_name, padding_side='left', legacy=False)
+        self.tokenizer = tokenizer_class.from_pretrained('/scratch/models/hf/Llama-2-7b-chat-hf', padding_side='left', legacy=False)
         self.model = None
       
         self.on_device = on_device
@@ -32,7 +34,13 @@ class LLM:
         self.adv_token_id = 0
         
         if not tokenizer_only:
-            self.model = model_class.from_pretrained(llm_name, **model_load_kargs)
+            if half_precision:
+                # self.model = model_class.from_pretrained(llm_name, **model_load_kargs).half()
+                quantization_config = BitsAndBytesConfig(load_in_8bit=True)
+
+                self.model = model_class.from_pretrained('/scratch/models/hf/Llama-2-7b-chat-hf', quantization_config=quantization_config, **model_load_kargs)
+            else:
+                self.model = model_class.from_pretrained(llm_name, **model_load_kargs)
 
     def generate(self, prompt, skip_special_tokens=False, max_new_tokens=1500, do_sample=False, **kargs):
     
@@ -74,7 +82,10 @@ _MODELS = {
     
     'openchat/openchat_3.5' : (OpenAssistant, {'tokenizer_class':AutoTokenizer, 'model_load_kargs':{'device_map':"auto"}}),
     
-    'meta-llama/Llama-2-7b-chat-hf' : (Llama2, {'tokenizer_class':LlamaTokenizer, 'model_load_kargs':{'device_map':"auto"}})                       }
+    'llama-2-7b' : (Llama2, {'tokenizer_class':LlamaTokenizer, 'model_load_kargs':{'device_map':"auto"}}),
+
+    '/scratch/models/hf/Llama-2-7b-chat-hf' : (Llama2, {'tokenizer_class':LlamaTokenizer, 'model_load_kargs':{'device_map':"auto"}}),                          
+ }
 
             
 def load_llm(m, cache_dir=_cache_dir, **kargs):

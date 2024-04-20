@@ -1,3 +1,3 @@
 from . import hparams
 
-hparams['llm'] = 'meta-llama/Llama-2-7b-chat-hf'
+hparams['llm'] = 'llama-2-7b'

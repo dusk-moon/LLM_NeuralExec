@@ -34,7 +34,12 @@ class Logger:
     def get_last_adv_tok(self, best=True):
         assert len(self.log_eval)
         if best:
-            loss_eval = np.concatenate([l['loss'][np.newaxis,:] for l in self.log_eval]).mean(-1)
+            for log in self.log_eval:
+                if log['loss'].ndim == 1:  # Check if the array is 1D
+                    log['loss'] = log['loss'][np.newaxis, :]
+
+            # loss_eval = np.concatenate([l['loss'][np.newaxis,:] for l in self.log_eval]).mean(-1)
+            loss_eval = np.array([l['loss'].mean() for l in self.log_eval])
             best_idx = loss_eval.argmin()
             last_ne = self.log_eval[best_idx]['NeuralExec']
             loss = loss_eval[best_idx]
